@@ -52,7 +52,7 @@ class DiscriminativeModel():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default='../data.mat')
+    parser.add_argument('--path', type=str, default='./data.mat')
     parser.add_argument('--delta_t', type=int, default=20)
     parser.add_argument('--front', type=int, default=28)
     parser.add_argument('--alpha', type=float, default=0.5)
