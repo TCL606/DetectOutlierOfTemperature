@@ -3,7 +3,7 @@ import numpy as np
 import copy
 import argparse
 
-class DiscrimativeModel():
+class DiscriminativeModel():
 
     def __init__(self, path, sigma):
         path = '../data.mat'
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     use_time_info = args.use_time_info
     sigma = args.sigma
 
-    model = DiscrimativeModel(path, sigma)
+    model = DiscriminativeModel(path, sigma)
     preds = np.zeros([150, 31])
     labels = np.arange(150).repeat(31).reshape(150, 31)
     t = copy.deepcopy(model.treal)
