@@ -1,10 +1,7 @@
 import scipy.io as scio
 import numpy as np
-from sklearn.linear_model import LinearRegression
 import copy
 import argparse
-import math
-import torch
 
 class DiscrimativeModel():
 
