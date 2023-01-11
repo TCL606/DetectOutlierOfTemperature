@@ -2,12 +2,13 @@ import scipy.io as scio
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import copy
+import argparse
 import math
 import torch
 
 class DiscrimativeModel():
 
-    def __init__(self, path):
+    def __init__(self, path, sigma):
         path = '../data.mat'
         self.data = scio.loadmat(path)
         if type(self.data) is dict:
@@ -23,28 +24,15 @@ class DiscrimativeModel():
         for i in range(len(self.idx)):
             for j in range(len(self.idx)):
                 if i != j:
-                    self.graph[i, j] = math.acos(
-                        math.cos(self.lng[i] - self.lng[j]) *
-                        math.cos(self.lat[i]) * math.cos(self.lat[j]) +
-                        math.sin(self.lat[i]) * math.sin(self.lat[j])
-                    )
-        self.W = np.exp(-self.graph ** 2 / 2 / 5 ** 2)
+                    self.graph[i, j] = self.lat[i] - self.lat[j] 
+        self.W = np.exp(-self.graph ** 2 / 2 / sigma ** 2)
 
 
     def fit_data(self, t, i, day):
-        # t_temp = np.concatenate([t[:i], t[i + 1:]])
-        # dist = torch.from_numpy(np.concatenate([self.graph[i, :i], self.graph[i, i + 1:]]))
-        # k = 149
-        # dist_mink, idx_mink = torch.topk(dist, k, largest=False)
-        # dist_down = 1 / dist_mink.numpy()
-        # prob = dist_down / np.sum(dist_down)
-        # t_pred = np.sum(t_temp[idx_mink] * prob)
-        # return t_pred - t[i]
-
-        local_var_loss = 0
+        local_var = 0
         for j in range(len(self.idx)):
-            local_var_loss += (t[j] - t[i]) ** 2 * self.W[i, j]
-        return local_var_loss        
+            local_var += (t[j] - t[i]) ** 2 * self.W[i, j]
+        return local_var        
 
     def detect_outlier(self, t, day, lat=None, lng=None):
         if lat is None:
@@ -66,19 +54,34 @@ class DiscrimativeModel():
 
 
 if __name__ == '__main__':
-    path = '../data.mat'
-    model = DiscrimativeModel(path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, default='../data.mat')
+    parser.add_argument('--delta_t', type=int, default=20)
+    parser.add_argument('--front', type=int, default=28)
+    parser.add_argument('--alpha', type=float, default=0.5)
+    parser.add_argument('--use_time_info', action='store_true')
+    parser.add_argument('--sigma', type=float, default=3.0)
+    args = parser.parse_args()
+
+    path = args.path
+    delta_t = args.delta_t
+    front = args.front
+    alpha = args.alpha
+    use_time_info = args.use_time_info
+    sigma = args.sigma
+
+    model = DiscrimativeModel(path, sigma)
     preds = np.zeros([150, 31])
     labels = np.arange(150).repeat(31).reshape(150, 31)
     t = copy.deepcopy(model.treal)
-    delta_t = 20
-    front = 28
-    alpha = 0.5
     for j in range(31):
         for i in range(150):
             t[i, j] += delta_t
             if j > 0 and t[i, j] - np.average(t[i, max(j - front, 0):j]) > delta_t * alpha:
-                preds[i, j] = preds[i, j] = model.detect_outlier(t[:, j], j) # i
+                if use_time_info:
+                    preds[i, j] = i
+                else:
+                    preds[i, j] = preds[i, j] = model.detect_outlier(t[:, j], j)
             else:
                 preds[i, j] = model.detect_outlier(t[:, j], j)
             t[i, j] -= delta_t
