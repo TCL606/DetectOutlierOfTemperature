@@ -6,7 +6,6 @@ import argparse
 class DiscriminativeModel():
 
     def __init__(self, path, sigma):
-        path = '../data.mat'
         self.data = scio.loadmat(path)
         if type(self.data) is dict:
             self.data = self.data['data']
